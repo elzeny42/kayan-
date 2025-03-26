@@ -1,0 +1,86 @@
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">تصفية التقارير</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <!-- Report Type -->
+            <div class="col-md-12 mb-3">
+                <label class="form-label">نوع التقرير</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="report_type" id="report_type_sales" value="sales" {% if selected_report_type == 'sales' %}checked{% endif %}>
+                        <label class="form-check-label" for="report_type_sales">المبيعات</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="report_type" id="report_type_purchases" value="purchases" {% if selected_report_type == 'purchases' %}checked{% endif %}>
+                        <label class="form-check-label" for="report_type_purchases">المشتريات</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="report_type" id="report_type_vehicle_movements" value="vehicle_movements" {% if selected_report_type == 'vehicle_movements' %}checked{% endif %}>
+                        <label class="form-check-label" for="report_type_vehicle_movements">حركات السيارات</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="report_type" id="report_type_treasury" value="treasury" {% if selected_report_type == 'treasury' %}checked{% endif %}>
+                        <label class="form-check-label" for="report_type_treasury">الخزينة</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="report_type" id="report_type_summary" value="summary" {% if selected_report_type == 'summary' %}checked{% endif %}>
+                        <label class="form-check-label" for="report_type_summary">ملخص</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Date Range -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">الفترة الزمنية</label>
+                <div class="input-group">
+                    <span class="input-group-text">من</span>
+                    <input type="date" class="form-control" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                    <span class="input-group-text">إلى</span>
+                    <input type="date" class="form-control" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+            </div>
+            
+            <!-- Client Filter -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">العميل</label>
+                <select class="form-select" name="client_id">
+                    <option value="">جميع العملاء</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}" {% if selected_client_id == client.id|stringformat:'s' %}selected{% endif %}>{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Driver Filter -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">السائق</label>
+                <select class="form-select" name="driver_id">
+                    <option value="">جميع السائقين</option>
+                    {% for driver in drivers %}
+                    <option value="{{ driver.id }}" {% if selected_driver_id == driver.id|stringformat:'s' %}selected{% endif %}>{{ driver.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Oil Type Filter -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">نوع الزيت</label>
+                <select class="form-select" name="oil_type_id">
+                    <option value="">جميع أنواع الزيوت</option>
+                    {% for oil_type in oil_types %}
+                    <option value="{{ oil_type.id }}" {% if selected_oil_type_id == oil_type.id|stringformat:'s' %}selected{% endif %}>{{ oil_type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">تطبيق التصفية</button>
+                <a href="{% url 'reports' %}" class="btn btn-secondary">إعادة تعيين</a>
+            </div>
+        </form>
+    </div>
+</div>

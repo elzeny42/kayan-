@@ -1,0 +1,77 @@
+<!-- Purchases Report -->
+<div class="card mb-4">
+    <div class="card-header text-white report-card">
+        <h5 class="mb-0">تقرير المشتريات</h5>
+    </div>
+    <div class="card-body">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center p-2">
+                        <h6 class="card-title mb-1">إجمالي المشتريات</h6>
+                        <h5 class="card-text mb-0">{{ total_amount|floatformat:2 }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body text-center p-2">
+                        <h6 class="card-title mb-1">إجمالي الكمية</h6>
+                        <h5 class="card-text mb-0">{{ total_quantity|floatformat:2 }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center p-2">
+                        <h6 class="card-title mb-1">عدد العمليات</h6>
+                        <h5 class="card-text mb-0">{{ report_data.count }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Purchases Table -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered-export">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>رقم العملية</th>
+                        <th>المورد</th>
+                        <th>نوع الزيت</th>
+                        <th class="export-currency">الكمية</th>
+                        <th class="export-currency">السعر</th>
+                        <th class="export-currency">المبلغ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in report_data %}
+                    <tr>
+                        <td>{{ purchase.date|date:'Y-m-d' }}</td>
+                        <td>{{ purchase.bu_id }}</td>
+                        <td>{{ purchase.supplier.name }}</td>
+                        <td>{{ purchase.oil_type.name }}</td>
+                        <td class="export-currency">{{ purchase.quantity|floatformat:2 }}</td>
+                        <td class="export-currency">{{ purchase.price|floatformat:2 }}</td>
+                        <td class="export-currency">{{ purchase.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">لا توجد بيانات للعرض</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="export-total">
+                        <td colspan="4">الإجمالي</td>
+                        <td class="export-currency">{{ total_quantity|floatformat:2 }}</td>
+                        <td></td>
+                        <td class="export-currency">{{ total_amount|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>

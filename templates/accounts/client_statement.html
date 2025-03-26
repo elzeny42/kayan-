@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}كيان - كشف حساب العميل{% endblock %}
+{% load custom_filters %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/client_statement.css' %}">
+{% endblock %}
+
+{% block content %}
+<h2>كشف حساب العميل</h2>
+
+<div class="mb-3">
+    <a href="{% url 'client_list' %}" class="btn btn-secondary">العودة لقائمة العملاء</a>
+</div>
+
+<!-- Client Selection Form -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">اختيار العميل</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="client_id" class="form-label">العميل</label>
+                <select name="client_id" id="client_id" class="form-select" required>
+                    <option value="">-- اختر العميل --</option>
+                    {% for client_item in clients %}
+                        <option value="{{ client_item.id }}" {% if client and client.id == client_item.id %}selected{% endif %}>{{ client_item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">عرض كشف الحساب</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if client %}
+<!-- Client Information -->
+<div class="card mb-4">
+    <div class="card-header text-white client-info-header">
+        <h5 class="mb-0">بيانات العميل</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <p><strong>رقم العميل:</strong> {{ client.client_id }}</p>
+            </div>
+            <div class="col-md-3">
+                <p><strong>اسم العميل:</strong> {{ client.name }}</p>
+            </div>
+            <div class="col-md-3">
+                <p><strong>اسم الشركة:</strong> كيان للتجارة</p>
+            </div>
+            <div class="col-md-3">
+                <p><strong>رقم الهاتف:</strong> {{ client.phone_number }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Summary -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">إجمالي المبيعات</h6>
+                <h5 class="card-text mb-0">{{ total_sales|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">إجمالي المشتريات</h6>
+                <h5 class="card-text mb-0">{{ total_purchases|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">الكمية المباعة</h6>
+                <h5 class="card-text mb-0">{{ total_sold_quantity|default:"0.00"|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">الكمية المشتراة</h6>
+                <h5 class="card-text mb-0">{{ total_purchased_quantity|default:"0.00"|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-purple">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">إجمالي إيداعات العميل</h6>
+                <h5 class="card-text mb-0">{{ total_client_deposits|default:"0.00"|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-orange">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">إجمالي إيداعات الشركة</h6>
+                <h5 class="card-text mb-0">{{ total_company_deposits|default:"0.00"|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card text-white summary-card {% if transactions|last %}{% with last_transaction=transactions|last %}{% if last_transaction.balance <= 0 %}positive{% else %}negative{% endif %}{% endwith %}{% endif %}">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">{% if transactions|last %}{% with last_transaction=transactions|last %}{% if last_transaction.balance <= 0 %}إجمالي الرصيد للشركة{% else %}إجمالي الرصيد للعميل{% endif %}{% endwith %}{% else %}إجمالي الرصيد للعميل{% endif %}</h6>
+                <h5 class="card-text mb-0">{% if transactions|last %}{% with last_transaction=transactions|last %}{{ last_transaction.balance|floatformat:2|abs }}{% endwith %}{% else %}0.00{% endif %}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Transactions Table -->
+<div class="card mb-4">
+    <div class="card-header text-white bg-dark">
+        <h5 class="mb-0">جميع المعاملات</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered-export">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>رقم العملية</th>
+                        <th>نوع العملية</th>
+                        <th>التفاصيل</th>
+                        <th class="export-currency">المبلغ</th>
+                        <th class="export-currency">الرصيد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date|date:'Y-m-d' }}</td>
+                        <td>{{ transaction.transaction_id }}</td>
+                        <td>
+                            <span class="badge {% if transaction.type == 'sale' %}bg-success{% elif transaction.type == 'purchase' %}bg-primary{% else %}bg-info{% endif %}">
+                                {% if transaction.type == 'sale' %}مبيعات{% elif transaction.type == 'purchase' %}مشتريات{% else %}خزينة{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ transaction.details }}</td>
+                        <td class="export-currency {% if transaction.amount > 0 %}income{% else %}expense{% endif %}">
+                            {{ transaction.amount|floatformat:2 }}
+                        </td>
+                        <td class="export-currency {% if transaction.balance > 0 %}positive{% else %}negative{% endif %}">
+                            {{ transaction.balance|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">لا توجد معاملات لهذا العميل</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="export-total">
+                        <td colspan="4">إجمالي المبيعات</td>
+                        <td class="export-currency income">{{ total_sales|floatformat:2 }}</td>
+                        <td></td>
+                    </tr>
+                    <tr class="export-total">
+                        <td colspan="4">إجمالي المشتريات</td>
+                        <td class="export-currency expense">{{ total_purchases|floatformat:2 }}</td>
+                        <td></td>
+                    </tr>
+                    <tr class="export-total">
+                        <td colspan="4">الرصيد النهائي</td>
+                        <td></td>
+                        <td class="export-currency {% if transactions|last %}{% with last_transaction=transactions|last %}{% if last_transaction.balance > 0 %}positive{% else %}negative{% endif %}{% endwith %}{% endif %}">
+                            {% if transactions|last %}{% with last_transaction=transactions|last %}{{ last_transaction.balance|floatformat:2 }}{% endwith %}{% else %}0.00{% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

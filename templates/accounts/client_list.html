@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}قائمة العملاء - نظام كيان للتجارة{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<!-- DataTables Buttons CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+<!-- Print CSS -->
+<link rel="stylesheet" href="{% static 'css/print.css' %}" media="print">
+<link rel="stylesheet" href="{% static 'css/print_header_footer.css' %}" media="print">
+<!-- Export CSS -->
+<link rel="stylesheet" href="{% static 'css/exports.css' %}">
+<link rel="stylesheet" href="{% static 'css/client_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="print-header d-none">
+    <h1>كيان للتجارة</h1>
+    <h2>قائمة العملاء</h2>
+    <p class="print-date">التاريخ: <span id="current-date"></span></p>
+</div>
+
+<div class="print-footer d-none">
+    <p>جميع الحقوق محفوظة &copy; كيان للتجارة <span id="current-year"></span></p>
+</div>
+
+<h2>قائمة العملاء</h2>
+
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if user.role == 'admin' %}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+    <a href="{% url 'client_create' %}" class="btn btn-primary">إضافة عميل جديد</a>
+    <div class="badge bg-info text-white p-2 fs-6">إجمالي عدد العملاء: {{ clients|length }}</div>
+</div>
+{% endif %}
+
+<input type="hidden" id="clientCount" value="{{ clients|length }}">
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="clientTable" class="table table-striped table-hover table-bordered-export">
+                <thead>
+                    <tr>
+                        <th data-export="رقم العميل">الرقم</th>
+                        <th data-export="اسم العميل">الاسم</th>
+                        <th data-export="اسم الشركة">الشركة</th>
+                        <th data-export="العنوان">العنوان</th>
+                        <th data-export="رقم الهاتف">الهاتف</th>
+                        <th data-export="رقم السجل">رقم السجل</th>  
+                        <th data-export="رقم الحساب">الحساب البنكي</th>
+                        <th data-export="الرصيد" class="export-currency">الرصيد (جم)</th>
+                        <th class="no-export">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td>{{ client.client_id }}</td>
+                        <td>{{ client.name }}</td>
+                        <td>{{ client.company_name|default:'-' }}</td>
+                        <td>{{ client.address }}</td>
+                        <td>{{ client.phone_number }}</td>
+                        <td>{{ client.commercial_reg_number|default:'-' }}</td>
+                        <td>{{ client.bank_account_number|default:'-' }}</td>
+                        <td class="export-balance {% if client.balance > 0 %}positive{% elif client.balance < 0 %}negative{% endif %}">
+                            {{ client.balance|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if user.role == 'admin' or user.role == 'client_manager' %}
+                            <a href="{% url 'client_update' client.id %}" class="btn btn-sm btn-primary">تعديل</a>
+                            <a href="{% url 'client_delete' client.id %}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+                            <a href="{% url 'client_balance_logs' client.id %}" class="btn btn-sm btn-info">سجل الرصيد</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<!-- DataTables Buttons JS -->
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="{% static 'js/shared_functions.js' %}"></script>
+<script src="{% static 'js/print_utils.js' %}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        const clientCount = parseInt(document.getElementById('clientCount').value) || 0;
+        let exportSettings;
+        try {
+            exportSettings = await getTableExportSettings('قائمة العملاء', clientCount);
+        } catch (error) {
+            console.error('Error loading export settings:', error);
+            exportSettings = { excel: {}, pdf: {}, print: {} }; // إعدادات افتراضية في حالة الفشل
+        }
+        
+        $('#clientTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'copy',
+                    text: 'نسخ',
+                    className: 'btn btn-secondary'
+                },
+                {
+                    extend: 'excel',
+                    text: 'إكسل',
+                    className: 'btn btn-success',
+                    ...exportSettings.excel,
+                    customize: function(xlsx) {
+                        const sheet = xlsx.xl.worksheets['sheet1.xml'];
+                        
+                        // Set RTL direction
+                        $('worksheet', sheet).attr('rightToLeft', '1');
+                        
+                        // Configure columns
+                        const columnSettings = [
+                            { width: 10, rtl: true },     // رقم العميل
+                            { width: 20, rtl: true },     // اسم العميل
+                            { width: 20, rtl: true },     // اسم الشركة
+                            { width: 25, rtl: true },     // العنوان
+                            { width: 15, rtl: true },     // رقم الهاتف
+                            { width: 15, rtl: true },     // رقم السجل
+                            { width: 20, rtl: true },     // الحساب البنكي
+                            { width: 15, rtl: false }     // الرصيد
+                        ];
+                        
+                        columnSettings.forEach((setting, index) => {
+                            const colLetter = String.fromCharCode(65 + index);
+                            
+                            // Set column width
+                            $(`col:eq(${index})`, sheet).attr('width', setting.width);
+                            
+                            // Apply text direction
+                            $(`row c[r^="${colLetter}"]`, sheet).each(function() {
+                                const cell = $(this);
+                                if (setting.rtl) {
+                                    cell.attr('s', '55'); // RTL style
+                                }
+                                
+                                // Special handling for balance column
+                                if (index === 7) {
+                                    const value = parseFloat($('v', this).text());
+                                    const colorStyle = value > 0 ? '57' : '56';
+                                    cell.attr('s', colorStyle);
+                                }
+                            });
+                        });
+                    }
+                },
+                {
+                    text: '<i class="fas fa-print"></i> طباعة',
+                    className: 'btn btn-primary',
+                    action: function(e, dt, node, config) {
+                        printUtils.printWithHeaderAndFooter();
+                    }
+                }
+            ],
+            order: [[0, 'desc']],
+            pageLength: 25,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Arabic.json'
+            }
+        });
+        
+        // تحديث التاريخ والسنة في عناصر الطباعة
+        const currentDateElement = document.getElementById('current-date');
+        if (currentDateElement) {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            currentDateElement.textContent = today.toLocaleDateString('ar-EG', options);
+        }
+        
+        const currentYearElement = document.getElementById('current-year');
+        if (currentYearElement) {
+            currentYearElement.textContent = new Date().getFullYear();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}كيان - تأكيد حذف عملية الشراء{% endblock %}
+{% block content %}
+<h2>حذف المشتريات</h2>
+<form method="post">
+    {% csrf_token %}
+    <p>هل أنت متأكد من رغبتك في حذف المشتريات رقم "{{ object.id }}"؟</p>
+    <button type="submit" class="btn btn-danger">نعم، احذف</button>
+    <a href="{% url 'purchase_list' %}" class="btn btn-secondary">إلغاء</a>
+</form>
+{% endblock %}

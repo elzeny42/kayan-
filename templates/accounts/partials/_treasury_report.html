@@ -1,0 +1,93 @@
+<!-- Treasury Report -->
+<div class="card mb-4">
+    <div class="card-header text-white report-card">
+        <h5 class="mb-0">تقرير الخزينة</h5>
+    </div>
+    <div class="card-body">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center p-2">
+                        <h6 class="card-title mb-1">إجمالي الإيرادات</h6>
+                        <h5 class="card-text mb-0">{{ total_income|floatformat:2 }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-danger">
+                    <div class="card-body text-center p-2">
+                        <h6 class="card-title mb-1">إجمالي المصروفات</h6>
+                        <h5 class="card-text mb-0">{{ total_expense|floatformat:2 }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-white {% if net_balance >= 0 %}bg-primary{% else %}bg-danger{% endif %}">
+                    <div class="card-body text-center p-2">
+                        <h6 class="card-title mb-1">صافي الرصيد</h6>
+                        <h5 class="card-text mb-0">{{ net_balance|floatformat:2 }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Treasury Table -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered-export">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>رقم الحركة</th>
+                        <th>نوع المعاملة</th>
+                        <th>طريقة الدفع</th>
+                        <th>الوصف</th>
+                        <th>العميل</th>
+                        <th>السائق</th>
+                        <th class="export-currency">المبلغ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for treasury in report_data %}
+                    <tr>
+                        <td>{{ treasury.date|date:'Y-m-d' }}</td>
+                        <td>{{ treasury.movement_id }}</td>
+                        <td>
+                            <span class="badge {% if treasury.transaction_type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if treasury.transaction_type == 'income' %}وارد{% else %}منصرف{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ treasury.get_payment_method_display }}</td>
+                        <td>{{ treasury.description }}</td>
+                        <td>{{ treasury.related_client.name|default:'-' }}</td>
+                        <td>{{ treasury.related_driver.name|default:'-' }}</td>
+                        <td class="export-currency {% if treasury.transaction_type == 'income' %}income{% else %}expense{% endif %}">
+                            {{ treasury.paid_amount|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">لا توجد بيانات للعرض</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="export-total">
+                        <td colspan="7">إجمالي الإيرادات</td>
+                        <td class="export-currency income">{{ total_income|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="export-total">
+                        <td colspan="7">إجمالي المصروفات</td>
+                        <td class="export-currency expense">{{ total_expense|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="export-total">
+                        <td colspan="7">صافي الرصيد</td>
+                        <td class="export-currency {% if net_balance >= 0 %}income{% else %}expense{% endif %}">
+                            {{ net_balance|floatformat:2 }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
